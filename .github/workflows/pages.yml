@@ -34,11 +34,19 @@ jobs:
       - name: Validate HTML
         run: npx --yes html-validate@8 index.html
 
+      - name: Check CSP hashes match the inline style and script
+        run: node tools/csp.mjs --check
+
       - name: Check project rules
         run: |
           fail=0
+          if ! grep -q 'http-equiv="Content-Security-Policy"' index.html; then
+            echo "::error file=index.html::Content-Security-Policy meta tag missing"
+            fail=1
+          fi
           for pattern in 'localStorage' 'sessionStorage' 'indexedDB' 'document\.cookie' 'alert\(' 'confirm\(' '!important' \
-                         '<script[^>]+src=' '<link[^>]+rel="stylesheet"' '@import'; do
+                         '<script[^>]+src=' '<link[^>]+rel="stylesheet"' '@import' \
+                         'unsafe-inline' 'unsafe-eval' '<[a-z][^>]* style=' ' on[a-z]+="' 'eval\(' 'new Function'; do
             if grep -nE "$pattern" index.html; then
               echo "::error file=index.html::Forbidden pattern found: $pattern"
               fail=1

@@ -2,38 +2,60 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IT PMO Kanban</title>
+<!--
+  Content Security Policy. The inline style and script blocks are allowed only by
+  their SHA-256 hashes, so injected markup cannot run script or add styles.
+  After editing either block, run `node tools/csp.mjs --write`
+  to refresh the hashes (CI runs `--check` and fails if they are stale).
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-uAtPOvJDxTM15W0YzRdZC3Qwx6jaFMTLtU+qSFkcTT8='; style-src 'sha256-RJ08d9JUu7+XeI0u8IH7iC8lARTDoT95xo4OiH0HEAQ='; img-src data:; connect-src https://formsubmit.co; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'none'">
+<meta name="referrer" content="strict-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a17">
+<meta name="description" content="IT PMO Kanban board, project timelines and reports for a fictitious bank (demo/training tool).">
+<title>IT PMO Kanban v2</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%234b5320'/%3E%3Crect x='4' y='5' width='4' height='14' rx='1' fill='%23e9e1cc'/%3E%3Crect x='10' y='5' width='4' height='9' rx='1' fill='%23fff'/%3E%3Crect x='16' y='5' width='4' height='5' rx='1' fill='%23e9e1cc'/%3E%3C/svg%3E">
 <style>
   /* =========================================================
-     Design tokens: palette, spacing scale, typography
+     Design tokens: army green palette, spacing scale, typography
      ========================================================= */
   :root {
-    --blue-900: #0b2545;
-    --blue-800: #13315c;
-    --blue-700: #1d4e89;
-    --blue-500: #2f6fbf;
-    --blue-100: #e3edf9;
-    --blue-50:  #f3f7fc;
+    --olive-950: #161d10;
+    --olive-900: #1f2a17;
+    --olive-800: #2c3a1f;
+    --olive-700: #3a4a24;
+    --army:      #4b5320;
+    --olive-500: #66713a;
+    --olive-300: #a3ad84;
+    --olive-200: #cdd3b6;
+    --olive-100: #e6e9da;
+    --olive-50:  #f4f5ee;
+    --khaki:     #c3b091;
+    --sand:      #e9e1cc;
 
-    --ink-900: #1b2330;
-    --ink-700: #3d4756;
-    --ink-500: #6b7685;
-    --ink-300: #c5ccd6;
-    --ink-100: #eef1f5;
+    --ink-900: #1e231a;
+    --ink-700: #3e4537;
+    --ink-500: #626a58;
+    --ink-300: #c4c9b8;
+    --ink-100: #eceee6;
     --white:   #ffffff;
 
-    --prio-critical: #c62828;
-    --prio-high:     #d98200;
-    --prio-medium:   #2f6fbf;
-    --prio-low:      #8a94a3;
+    --prio-critical: #b3261e;
+    --prio-high:     #c77700;
+    --prio-medium:   #4b5320;
+    --prio-low:      #8a8f7a;
 
-    --danger-bg:  #fdecec;
-    --danger-ink: #a61b1b;
-    --warn-bg:    #fff4e0;
-    --warn-ink:   #8a5300;
-    --ok-bg:      #e7f6ec;
-    --ok-ink:     #1e6b3a;
+    --status-backlog:  #8f957f;
+    --status-progress: #4b5320;
+    --status-blocked:  #b5651d;
+    --status-done:     #2e5e4e;
+
+    --danger-bg:  #fbeceb;
+    --danger-ink: #9c2018;
+    --warn-bg:    #fdf3e1;
+    --warn-ink:   #7f4c00;
+    --ok-bg:      #e8f1e4;
+    --ok-ink:     #2b5420;
 
     --focus-ring: 0 0 0 3px #ffbf47;
 
@@ -44,10 +66,13 @@
     --space-5: 24px;
     --space-6: 32px;
 
-    --radius-sm: 4px;
-    --radius:    8px;
-    --shadow:    0 1px 2px rgba(11, 37, 69, .08), 0 2px 6px rgba(11, 37, 69, .06);
-    --shadow-lg: 0 10px 30px rgba(11, 37, 69, .25);
+    --radius-sm: 6px;
+    --radius:    10px;
+    --shadow:    0 1px 2px rgba(31, 42, 23, .08), 0 2px 6px rgba(31, 42, 23, .06);
+    --shadow-lg: 0 12px 32px rgba(22, 29, 16, .28);
+
+    --tabbar-h: 64px;
+    --ease: 180ms ease;
 
     --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
@@ -56,66 +81,102 @@
      Base
      ========================================================= */
   *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
     font-family: var(--font);
-    font-size: 14px;
-    line-height: 1.45;
+    font-size: 15px;
+    line-height: 1.5;
     color: var(--ink-900);
-    background: var(--blue-50);
+    background: var(--olive-50);
   }
   button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
   :focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  [hidden] { display: none; }
   .visually-hidden {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
+  .skip-link {
+    position: absolute; left: var(--space-4); top: -60px; z-index: 30;
+    background: var(--sand); color: var(--olive-900); padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-sm); font-weight: 700;
+  }
+  .skip-link:focus { top: var(--space-2); }
+  .framed-warning { padding: var(--space-6); text-align: center; }
 
   /* Buttons */
   .btn {
-    display: inline-flex; align-items: center; gap: var(--space-2);
-    border: 1px solid transparent; border-radius: var(--radius-sm);
-    padding: var(--space-2) var(--space-4); cursor: pointer; font-weight: 600;
-    background: var(--white); color: var(--blue-800); border-color: var(--ink-300);
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+    min-height: 40px; border: 1px solid var(--ink-300); border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-4); font-weight: 600;
+    background: var(--white); color: var(--olive-800);
+    transition: background var(--ease), border-color var(--ease);
   }
-  .btn:hover { background: var(--blue-100); }
-  .btn-primary { background: var(--blue-700); color: var(--white); border-color: var(--blue-700); }
-  .btn-primary:hover { background: var(--blue-800); }
+  .btn:hover { background: var(--olive-100); }
+  .btn-primary { background: var(--army); color: var(--white); border-color: var(--army); }
+  .btn-primary:hover { background: var(--olive-700); }
   .btn-primary:disabled { background: var(--ink-500); border-color: var(--ink-500); cursor: progress; }
-  .btn-light { background: var(--white); color: var(--blue-900); border-color: var(--white); }
-  .btn-light:hover { background: var(--blue-100); }
+  .btn-light { background: var(--sand); color: var(--olive-900); border-color: var(--sand); }
+  .btn-light:hover { background: var(--white); }
+  .btn svg { width: 18px; height: 18px; }
 
   /* =========================================================
      Header: wordmark, summary strip, actions
      ========================================================= */
   .app-header {
-    background: var(--blue-900);
+    background: var(--olive-900);
     color: var(--white);
-    padding: var(--space-4) var(--space-5);
-    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-5);
+    padding: var(--space-4) var(--space-5) var(--space-3);
+    padding-top: max(var(--space-4), env(safe-area-inset-top));
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5);
   }
   .wordmark {
     display: flex; align-items: center; gap: var(--space-2);
     font-size: 20px; font-weight: 800; letter-spacing: .04em; margin: 0;
   }
   .wordmark small { font-weight: 400; font-size: 13px; opacity: .8; letter-spacing: 0; }
+  .version-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    background: var(--khaki); color: var(--olive-900); border-radius: 999px; padding: 1px var(--space-2);
+  }
   .summary {
     display: flex; flex-wrap: wrap; gap: var(--space-2);
     list-style: none; margin: 0; padding: 0; flex: 1 1 auto;
   }
   .summary li {
-    background: rgba(255, 255, 255, .1);
+    background: rgba(233, 225, 204, .12);
     border-radius: var(--radius-sm);
     padding: var(--space-1) var(--space-3);
     font-size: 13px;
   }
   .summary strong { font-size: 15px; margin-left: var(--space-1); }
-  .summary .overdue-stat { background: rgba(198, 40, 40, .45); }
+  .summary .overdue-stat { background: rgba(179, 38, 30, .55); }
   .header-actions { display: flex; align-items: center; gap: var(--space-3); }
   .send-status { font-size: 12px; opacity: .85; }
-  .demo-note {
-    flex-basis: 100%; margin: 0; font-size: 12px; opacity: .75;
+  .demo-note { flex-basis: 100%; margin: 0; font-size: 12px; opacity: .75; }
+
+  /* =========================================================
+     Tabs: top bar on desktop, fixed bottom bar on mobile
+     ========================================================= */
+  .tabbar {
+    position: sticky; top: 0; z-index: 8;
+    background: var(--olive-800);
+    padding: 0 var(--space-5);
+    box-shadow: 0 2px 6px rgba(22, 29, 16, .2);
   }
+  .tablist { display: flex; gap: var(--space-1); max-width: 100%; }
+  .tab {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    min-height: 48px; padding: 0 var(--space-4);
+    border: 0; border-bottom: 3px solid transparent; background: transparent;
+    color: var(--olive-200); font-weight: 600;
+    transition: color var(--ease), background var(--ease), border-color var(--ease);
+  }
+  .tab svg { width: 20px; height: 20px; flex: none; }
+  .tab:hover { color: var(--white); background: rgba(255, 255, 255, .06); }
+  .tab[aria-selected="true"] { color: var(--sand); border-bottom-color: var(--khaki); }
 
   /* =========================================================
      Filter bar
@@ -131,15 +192,25 @@
   .field label { font-size: 12px; font-weight: 600; color: var(--ink-700); }
   .field input, .field select, .field textarea {
     border: 1px solid var(--ink-300); border-radius: var(--radius-sm);
-    padding: var(--space-2) var(--space-3); background: var(--white); min-width: 160px;
+    padding: var(--space-2) var(--space-3); background: var(--white); min-width: 160px; min-height: 40px;
   }
   .field textarea { resize: vertical; min-height: 80px; }
   .filter-count { font-size: 12px; color: var(--ink-500); align-self: center; }
+  .filter-note { font-size: 12px; color: var(--ink-500); align-self: center; margin: 0; }
+
+  /* =========================================================
+     Panels
+     ========================================================= */
+  main { padding: var(--space-5); }
+  .panel:focus-visible { border-radius: var(--radius); }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-4); }
+  .panel-head h2 { margin: 0; font-size: 18px; color: var(--olive-900); }
+  .panel-head p { margin: 0; font-size: 13px; color: var(--ink-500); }
+  .empty { color: var(--ink-500); font-size: 13px; text-align: center; padding: var(--space-4) 0; margin: 0; }
 
   /* =========================================================
      Board & columns
      ========================================================= */
-  main { padding: var(--space-5); }
   .board {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -149,26 +220,29 @@
   .column {
     background: var(--ink-100);
     border: 2px solid transparent;
+    border-top: 4px solid var(--status-backlog);
     border-radius: var(--radius);
     padding: var(--space-3);
     min-height: 240px;
-    transition: background .15s, border-color .15s;
+    transition: background var(--ease), border-color var(--ease);
   }
-  .column.drop-target { background: var(--blue-100); border: 2px dashed var(--blue-500); }
+  .column[data-status="In Progress"] { border-top-color: var(--status-progress); }
+  .column[data-status="Blocked"]     { border-top-color: var(--status-blocked); }
+  .column[data-status="Done"]        { border-top-color: var(--status-done); }
+  .column.drop-target { background: var(--olive-100); border: 2px dashed var(--army); border-top-width: 4px; }
   .column-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: var(--space-1) var(--space-1) var(--space-3);
   }
-  .column-header h2 { margin: 0; font-size: 15px; color: var(--blue-900); }
+  .column-header h3 { margin: 0; font-size: 15px; color: var(--olive-900); }
   .column-header p { margin: 0; font-size: 11px; color: var(--ink-500); }
   .count-badge {
-    background: var(--blue-700); color: var(--white);
+    background: var(--army); color: var(--white);
     border-radius: 999px; padding: 2px var(--space-2);
     font-size: 12px; font-weight: 700; min-width: 26px; text-align: center;
   }
   .card-list { display: flex; flex-direction: column; gap: var(--space-3); min-height: 40px; }
   .card-list:focus-visible { border-radius: var(--radius-sm); }
-  .empty { color: var(--ink-500); font-size: 12px; text-align: center; padding: var(--space-4) 0; margin: 0; }
 
   /* =========================================================
      Task cards
@@ -193,6 +267,9 @@
   .card-meta { margin: 0 0 var(--space-2); font-size: 12px; color: var(--ink-700); display: grid; gap: 2px; }
   .card-meta dt { display: inline; font-weight: 600; color: var(--ink-500); }
   .card-meta dd { display: inline; margin: 0; overflow-wrap: anywhere; }
+  .card-span { height: 6px; border-radius: 999px; background: var(--ink-100); position: relative; overflow: hidden; margin: 0 0 var(--space-2); }
+  .card-span span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: var(--olive-500); }
+  .card-span.is-late span { background: var(--prio-critical); }
   .badges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
   .pill, .tag, .overdue {
     display: inline-block; font-size: 11px; font-weight: 700;
@@ -203,21 +280,25 @@
   .pill-high     { background: var(--prio-high); color: var(--ink-900); }
   .pill-medium   { background: var(--prio-medium); }
   .pill-low      { background: var(--prio-low); color: var(--ink-900); }
-  .tag { background: var(--blue-100); color: var(--blue-800); font-weight: 600; }
-  .overdue { background: var(--danger-bg); color: var(--danger-ink); border: 1px solid #f2b8b8; }
+  .tag { background: var(--olive-100); color: var(--olive-800); font-weight: 600; }
+  .overdue { background: var(--danger-bg); color: var(--danger-ink); border: 1px solid #efb9b4; }
 
   .card-actions { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-3); }
   .icon-btn {
-    border: 1px solid transparent; background: transparent; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; min-height: 32px;
+    border: 1px solid transparent; background: transparent;
     border-radius: var(--radius-sm); line-height: 1; padding: var(--space-1) var(--space-2);
-    color: var(--ink-500); font-size: 16px;
+    color: var(--ink-500); font-size: 18px;
   }
   .icon-btn:hover { background: var(--danger-bg); color: var(--danger-ink); }
   .link-btn {
-    border: 1px solid var(--ink-300); background: var(--white); cursor: pointer;
-    border-radius: var(--radius-sm); padding: 2px var(--space-2); font-size: 12px; color: var(--blue-800); font-weight: 600;
+    min-height: 32px;
+    border: 1px solid var(--ink-300); background: var(--white);
+    border-radius: var(--radius-sm); padding: 2px var(--space-3); font-size: 12px; color: var(--olive-800); font-weight: 600;
+    transition: background var(--ease);
   }
-  .link-btn:hover { background: var(--blue-100); }
+  .link-btn:hover { background: var(--olive-100); }
   .move-menu { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-2); }
   .move-menu p { margin: 0; flex-basis: 100%; font-size: 11px; color: var(--ink-500); }
   .confirm-row {
@@ -228,34 +309,140 @@
   .confirm-row .yes { background: var(--prio-critical); color: var(--white); border-color: var(--prio-critical); }
 
   /* =========================================================
+     Legend (shared by timeline and reports)
+     ========================================================= */
+  .legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); list-style: none; margin: 0 0 var(--space-4); padding: 0; font-size: 12px; color: var(--ink-700); }
+  .legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .swatch { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+  .swatch-today { width: 2px; height: 14px; border-radius: 0; background: var(--prio-critical); }
+  .swatch-late { background: var(--white); outline: 2px solid var(--prio-critical); outline-offset: -2px; }
+
+  .s-backlog  { background: var(--status-backlog); }
+  .s-in-progress { background: var(--status-progress); }
+  .s-blocked  { background: repeating-linear-gradient(135deg, var(--status-blocked) 0 5px, #cf8a4a 5px 9px); }
+  .s-done     { background: var(--status-done); }
+
+  /* =========================================================
+     Timeline (Gantt)
+     ========================================================= */
+  .gantt { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--space-3) var(--space-4) var(--space-4); }
+  .gantt-head, .gantt-row { display: grid; grid-template-columns: minmax(200px, 300px) 1fr; gap: var(--space-4); align-items: center; }
+  .gantt-head { position: sticky; top: 48px; z-index: 2; background: var(--white); padding: var(--space-2) 0; border-bottom: 1px solid var(--ink-300); }
+  .gantt-head > span { font-size: 12px; font-weight: 700; color: var(--ink-500); text-transform: uppercase; letter-spacing: .06em; }
+  .gantt-axis { position: relative; height: 22px; }
+  .tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; color: var(--ink-500); white-space: nowrap; }
+  .tick-today { color: var(--prio-critical); font-weight: 700; top: auto; bottom: -2px; transform: translateX(-50%) translateY(100%); background: var(--white); padding: 0 var(--space-1); }
+  .gantt-group { border-bottom: 1px solid var(--ink-100); padding: var(--space-2) 0; }
+  .gantt-group:last-child { border-bottom: 0; }
+  .gantt-group ul { list-style: none; margin: 0; padding: 0; }
+  .gantt-row { min-height: 40px; padding: var(--space-1) 0; }
+  .gantt-label { min-width: 0; font-size: 13px; }
+  .gantt-label h3 { margin: 0; font-size: 14px; color: var(--olive-900); }
+  .gantt-label .sub { display: block; font-size: 11px; color: var(--ink-500); }
+  .gantt-label .ttl { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-label .tid { font-weight: 700; color: var(--ink-500); font-size: 11px; margin-right: var(--space-1); }
+  .gantt-track {
+    position: relative; height: 22px; border-radius: 4px; background: var(--olive-50);
+  }
+  .bar { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; min-width: 6px; }
+  .bar.is-late { outline: 2px solid var(--prio-critical); outline-offset: 1px; }
+  .bar-project { top: 5px; bottom: 5px; background: var(--olive-200); overflow: hidden; }
+  .bar-project span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--status-done); }
+  .today-line { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--prio-critical); transform: translateX(-1px); z-index: 1; }
+
+  /* =========================================================
+     Projects
+     ========================================================= */
+  .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); }
+  .project-card {
+    background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);
+    border-top: 4px solid var(--army);
+  }
+  .project-card header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+  .project-card h3 { margin: 0; font-size: 16px; color: var(--olive-900); }
+  .health { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px var(--space-2); white-space: nowrap; }
+  .health-on-track { background: var(--ok-bg); color: var(--ok-ink); }
+  .health-at-risk  { background: var(--warn-bg); color: var(--warn-ink); }
+  .health-off-track { background: var(--danger-bg); color: var(--danger-ink); }
+  .health-complete { background: var(--olive-100); color: var(--olive-800); }
+  .health-empty { background: var(--ink-100); color: var(--ink-500); }
+  .progress-row { display: flex; align-items: center; gap: var(--space-3); font-size: 12px; color: var(--ink-700); }
+  .progress { flex: 1; height: 8px; background: var(--ink-100); border-radius: 999px; position: relative; overflow: hidden; }
+  .progress span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--status-done); border-radius: 999px; }
+  .project-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); margin: 0; text-align: center; }
+  .project-stats div { background: var(--olive-50); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-1); }
+  .project-stats dt { font-size: 11px; color: var(--ink-500); }
+  .project-stats dd { margin: 0; font-size: 18px; font-weight: 700; color: var(--olive-900); }
+  .project-stats .is-alert dd { color: var(--danger-ink); }
+  .mini-gantt { padding: var(--space-2); border-radius: var(--radius-sm); background: var(--olive-50); }
+  .mini-inner { position: relative; display: flex; flex-direction: column; gap: 4px; }
+  .mini-lane { position: relative; height: 8px; }
+  .mini-lane .bar { top: 0; bottom: 0; border-radius: 999px; min-width: 4px; }
+  .mini-lane .bar.is-late { outline-width: 1px; }
+  .mini-inner .today-line { top: -4px; bottom: -4px; }
+  .mini-dates { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-500); }
+  .next-due { margin: 0; font-size: 12px; color: var(--ink-700); }
+  .next-due strong { color: var(--olive-900); }
+  .project-card .link-btn { align-self: flex-start; }
+
+  /* =========================================================
+     Reports
+     ========================================================= */
+  .report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .report-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--space-4); min-width: 0; }
+  .report-card.wide { grid-column: 1 / -1; }
+  .report-card h3 { margin: 0 0 var(--space-3); font-size: 15px; color: var(--olive-900); }
+  .stack { display: flex; height: 28px; border-radius: var(--radius-sm); overflow: hidden; background: var(--ink-100); margin-bottom: var(--space-3); }
+  .stack span { height: 100%; }
+  .stack span + span { border-left: 2px solid var(--white); }
+  .hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+  .hbars li { display: grid; grid-template-columns: minmax(90px, 140px) 1fr 32px; gap: var(--space-2); align-items: center; font-size: 13px; }
+  .hbars .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbars .val { text-align: right; font-weight: 700; }
+  .hbar { height: 14px; background: var(--ink-100); border-radius: 999px; position: relative; overflow: hidden; }
+  .hbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--army); }
+  .hbar .p-critical { background: var(--prio-critical); }
+  .hbar .p-high { background: var(--prio-high); }
+  .hbar .p-medium { background: var(--prio-medium); }
+  .hbar .p-low { background: var(--prio-low); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: var(--space-2); border-bottom: 1px solid var(--ink-100); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-500); }
+  td.late { color: var(--danger-ink); font-weight: 700; white-space: nowrap; }
+
+  /* =========================================================
      Modal + Add Task form
      ========================================================= */
   .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(11, 37, 69, .55);
+    position: fixed; inset: 0; background: rgba(22, 29, 16, .6);
     display: flex; align-items: flex-start; justify-content: center;
-    padding: var(--space-6) var(--space-4); overflow-y: auto; z-index: 10;
+    padding: var(--space-6) var(--space-4); overflow-y: auto; z-index: 20;
   }
   .modal-backdrop[hidden] { display: none; }
   .modal {
     background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg);
-    width: 100%; max-width: 620px; padding: var(--space-5);
+    width: 100%; max-width: 640px; padding: var(--space-5);
+    border-top: 5px solid var(--army);
   }
-  .modal h2 { margin: 0 0 var(--space-4); color: var(--blue-900); }
+  .modal h2 { margin: 0 0 var(--space-4); color: var(--olive-900); }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
   .form-grid .full { grid-column: 1 / -1; }
   .form-grid .field input, .form-grid .field select, .form-grid .field textarea { min-width: 0; width: 100%; }
   .req { color: var(--danger-ink); }
-  .hint { font-size: 11px; color: var(--ink-500); }
+  .hint { font-size: 11px; color: var(--ink-500); font-weight: 400; }
   .error { margin: 0; min-height: 1em; font-size: 12px; color: var(--danger-ink); font-weight: 600; }
   .field.invalid input, .field.invalid select, .field.invalid textarea { border-color: var(--prio-critical); background: #fffafa; }
   .form-actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); }
+  .honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 
   /* =========================================================
      Toasts
      ========================================================= */
   .toast-region {
     position: fixed; right: var(--space-4); bottom: var(--space-4);
-    display: flex; flex-direction: column; gap: var(--space-2); z-index: 20; max-width: min(380px, calc(100vw - 32px));
+    display: flex; flex-direction: column; gap: var(--space-2); z-index: 25; max-width: min(380px, calc(100vw - 32px));
   }
   .toast {
     display: flex; align-items: flex-start; gap: var(--space-3);
@@ -266,28 +453,87 @@
   .toast span { flex: 1; }
   .toast-success { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-ink); }
   .toast-warning { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--prio-high); }
-  .toast-info    { background: var(--white); color: var(--blue-900); border-color: var(--blue-500); }
-  .toast .icon-btn { color: inherit; font-size: 14px; }
+  .toast-info    { background: var(--white); color: var(--olive-900); border-color: var(--army); }
+  .toast .icon-btn { color: inherit; font-size: 16px; }
   @keyframes toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
   @media (prefers-reduced-motion: reduce) {
     .toast { animation: none; }
-    .column { transition: none; }
+    .column, .tab, .btn, .link-btn { transition: none; }
   }
 
   /* =========================================================
-     Responsive: stack columns below 768px
+     Responsive
      ========================================================= */
+  @media (max-width: 1023px) {
+    .report-grid { grid-template-columns: 1fr; }
+    .gantt-head, .gantt-row { grid-template-columns: minmax(160px, 220px) 1fr; }
+  }
+
+  /* Phones: bottom tab bar, swipeable board columns, stacked gantt rows */
   @media (max-width: 767px) {
+    body { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
     .app-header, .filters, main { padding-left: var(--space-4); padding-right: var(--space-4); }
-    .board { grid-template-columns: 1fr; }
-    .column { min-height: 0; }
+    .app-header { gap: var(--space-2) var(--space-3); }
+    .wordmark small { display: none; }
+    .summary { order: 3; flex-basis: 100%; gap: var(--space-1); }
+    .summary li { padding: 2px var(--space-2); font-size: 12px; }
+    .summary strong { font-size: 14px; }
+    .header-actions { margin-left: auto; }
+    .demo-note { order: 4; }
+
+    .tabbar {
+      position: fixed; top: auto; left: 0; right: 0; bottom: 0; z-index: 15;
+      padding: 0 0 env(safe-area-inset-bottom);
+      background: var(--olive-900); box-shadow: 0 -2px 10px rgba(22, 29, 16, .3);
+    }
+    .tablist { justify-content: space-around; gap: 0; }
+    .tab {
+      flex: 1 1 0; flex-direction: column; justify-content: center; gap: 2px;
+      min-height: var(--tabbar-h); padding: var(--space-1) 0;
+      border-bottom: 0; border-top: 3px solid transparent; font-size: 11px;
+    }
+    .tab[aria-selected="true"] { border-top-color: var(--khaki); background: rgba(233, 225, 204, .08); }
+    .tab svg { width: 22px; height: 22px; }
+
+    .filters { display: grid; grid-template-columns: 1fr 1fr; align-items: end; }
+    .filters h2, .filter-note, .filter-count { grid-column: 1 / -1; }
+    .filters .field-wide { grid-column: 1 / -1; }
+    .field input, .field select, .field textarea { min-width: 0; width: 100%; font-size: 16px; min-height: 44px; }
+
+    main { padding-top: var(--space-4); }
+    .board {
+      display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: var(--space-3);
+      margin: 0 calc(-1 * var(--space-4)); padding: 0 var(--space-4) var(--space-3);
+      overscroll-behavior-x: contain;
+    }
+    .column { flex: 0 0 86%; scroll-snap-align: center; min-height: 0; }
+    .icon-btn { min-width: 44px; min-height: 44px; }
+    .link-btn { min-height: 44px; padding: 0 var(--space-3); }
+    .btn { min-height: 44px; }
+
+    .gantt { padding: var(--space-2) var(--space-3) var(--space-3); }
+    .gantt-head, .gantt-row { grid-template-columns: 1fr; gap: var(--space-1); }
+    .gantt-head { top: 0; }
+    .gantt-head > span { display: none; }
+    .tick:not(.tick-today):nth-child(even) { display: none; }
+    .gantt-row { padding: var(--space-2) 0; }
+
+    .project-grid { grid-template-columns: 1fr; }
+    .hbars li { grid-template-columns: minmax(80px, 110px) 1fr 28px; }
+
+    .modal-backdrop { padding: 0; align-items: stretch; }
+    .modal { border-radius: 0; max-width: none; min-height: 100%; padding: var(--space-4); padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom)); }
     .form-grid { grid-template-columns: 1fr; }
-    .field input, .field select { min-width: 0; width: 100%; }
-    .filters .field { flex: 1 1 140px; }
+    .form-actions { position: sticky; bottom: 0; background: var(--white); padding: var(--space-3) 0; margin-top: var(--space-3); }
+    .form-actions .btn { flex: 1; }
+
+    .toast-region { left: var(--space-4); right: var(--space-4); bottom: calc(var(--tabbar-h) + var(--space-3) + env(safe-area-inset-bottom)); max-width: none; }
   }
 </style>
 </head>
 <body>
+
+<a class="skip-link" href="#main">Skip to content</a>
 
 <!-- =========================================================
      Header: wordmark, live summary strip, Add Task
@@ -295,35 +541,62 @@
 <header class="app-header">
   <p class="wordmark">
     <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <rect x="2" y="3" width="5" height="18" rx="1.5" fill="#7fb2ee"/>
-      <rect x="9.5" y="3" width="5" height="12" rx="1.5" fill="#ffffff"/>
-      <rect x="17" y="3" width="5" height="7" rx="1.5" fill="#7fb2ee"/>
+      <rect x="2" y="3" width="5" height="18" rx="1.5" fill="#a3ad84"/>
+      <rect x="9.5" y="3" width="5" height="12" rx="1.5" fill="#e9e1cc"/>
+      <rect x="17" y="3" width="5" height="7" rx="1.5" fill="#a3ad84"/>
     </svg>
-    IT PMO <small>Project Board</small>
+    IT PMO <small>Project Board</small> <span class="version-tag">V2</span>
   </p>
 
   <ul class="summary" id="summary" aria-label="Board summary"></ul>
 
   <div class="header-actions">
     <span class="send-status" id="send-status" aria-live="polite"></span>
-    <button type="button" class="btn btn-light" id="open-add">+ Add Task</button>
+    <button type="button" class="btn btn-light" id="open-add">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Add Task
+    </button>
   </div>
 
-  <p class="demo-note">Demo/training tool. The board is held in memory only, so refreshing the page resets it to the sample data.</p>
+  <p class="demo-note">Demo/training tool with fictitious data. The board is held in memory only, so refreshing the page resets it to the sample data.</p>
 </header>
 
 <!-- =========================================================
-     Filter bar
+     View tabs (top on desktop, bottom bar on phones)
+     ========================================================= -->
+<nav class="tabbar" aria-label="Views">
+  <div class="tablist" role="tablist" aria-label="Views" id="tablist">
+    <button type="button" class="tab" role="tab" id="tab-board" data-tab="board" aria-controls="panel-board" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="11" rx="1"/><rect x="17" y="4" width="4" height="7" rx="1"/></svg>
+      <span>Board</span>
+    </button>
+    <button type="button" class="tab" role="tab" id="tab-timeline" data-tab="timeline" aria-controls="panel-timeline" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h9M7 12h11M5 18h8"/><path d="M21 3v18" stroke-width="1.5"/></svg>
+      <span>Timeline</span>
+    </button>
+    <button type="button" class="tab" role="tab" id="tab-projects" data-tab="projects" aria-controls="panel-projects" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span>Projects</span>
+    </button>
+    <button type="button" class="tab" role="tab" id="tab-reports" data-tab="reports" aria-controls="panel-reports" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>
+      <span>Reports</span>
+    </button>
+  </div>
+</nav>
+
+<!-- =========================================================
+     Filter bar (applies to every view)
      ========================================================= -->
 <section class="filters" aria-labelledby="filters-heading">
   <h2 id="filters-heading">Filter</h2>
-  <div class="field">
+  <div class="field field-wide">
     <label for="filter-project">Project</label>
     <select id="filter-project"><option value="">All projects</option></select>
   </div>
   <div class="field">
     <label for="filter-assignee">Assignee contains</label>
-    <input type="search" id="filter-assignee" placeholder="e.g. Tan" autocomplete="off">
+    <input type="search" id="filter-assignee" placeholder="e.g. Tan" autocomplete="off" maxlength="60">
   </div>
   <div class="field">
     <label for="filter-priority">Priority</label>
@@ -334,10 +607,45 @@
 </section>
 
 <!-- =========================================================
-     Kanban board (columns are rendered by renderBoard())
+     Views (each panel is rendered from state by render())
      ========================================================= -->
-<main>
-  <section class="board" id="board" aria-label="Kanban board"></section>
+<main id="main">
+  <section class="panel" role="tabpanel" id="panel-board" aria-labelledby="tab-board" tabindex="-1">
+    <h2 class="visually-hidden">Kanban board</h2>
+    <div class="board" id="board"></div>
+  </section>
+
+  <section class="panel" role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline" tabindex="-1" hidden>
+    <div class="panel-head">
+      <h2>Project timeline</h2>
+      <p>Each bar runs from a task's start date to its due date.</p>
+    </div>
+    <ul class="legend" aria-label="Legend">
+      <li><span class="swatch s-backlog"></span>Backlog</li>
+      <li><span class="swatch s-in-progress"></span>In Progress</li>
+      <li><span class="swatch s-blocked"></span>Blocked (striped)</li>
+      <li><span class="swatch s-done"></span>Done</li>
+      <li><span class="swatch swatch-late"></span>Overdue (red outline)</li>
+      <li><span class="swatch swatch-today"></span>Today</li>
+    </ul>
+    <div id="timeline"></div>
+  </section>
+
+  <section class="panel" role="tabpanel" id="panel-projects" aria-labelledby="tab-projects" tabindex="-1" hidden>
+    <div class="panel-head">
+      <h2>Projects</h2>
+      <p>Progress, health and a mini timeline for each workstream, on a shared date scale.</p>
+    </div>
+    <div class="project-grid" id="projects"></div>
+  </section>
+
+  <section class="panel" role="tabpanel" id="panel-reports" aria-labelledby="tab-reports" tabindex="-1" hidden>
+    <div class="panel-head">
+      <h2>Reports</h2>
+      <p>Live figures for the tasks that match the current filters.</p>
+    </div>
+    <div class="report-grid" id="reports"></div>
+  </section>
 </main>
 
 <!-- =========================================================
@@ -350,7 +658,7 @@
       <div class="form-grid">
         <div class="field full">
           <label for="f-title">Task Title <span class="req" aria-hidden="true">*</span></label>
-          <input type="text" id="f-title" name="title" maxlength="80" required aria-describedby="err-title">
+          <input type="text" id="f-title" name="title" maxlength="80" required autocomplete="off" aria-describedby="err-title">
           <p class="error" id="err-title"></p>
         </div>
         <div class="field full">
@@ -370,13 +678,18 @@
         </div>
         <div class="field">
           <label for="f-assignee">Assignee <span class="req" aria-hidden="true">*</span></label>
-          <input type="text" id="f-assignee" name="assignee" maxlength="60" required aria-describedby="err-assignee">
+          <input type="text" id="f-assignee" name="assignee" maxlength="60" required autocomplete="off" aria-describedby="err-assignee">
           <p class="error" id="err-assignee"></p>
         </div>
         <div class="field">
           <label for="f-priority">Priority</label>
           <select id="f-priority" name="priority" aria-describedby="err-priority"></select>
           <p class="error" id="err-priority"></p>
+        </div>
+        <div class="field">
+          <label for="f-startDate">Start Date <span class="req" aria-hidden="true">*</span></label>
+          <input type="date" id="f-startDate" name="startDate" required aria-describedby="err-startDate">
+          <p class="error" id="err-startDate"></p>
         </div>
         <div class="field">
           <label for="f-dueDate">Due Date <span class="req" aria-hidden="true">*</span></label>
@@ -387,6 +700,11 @@
           <label for="f-status">Status</label>
           <select id="f-status" name="status" aria-describedby="err-status"></select>
           <p class="error" id="err-status"></p>
+        </div>
+        <!-- Honeypot: hidden from people, bots tend to fill it. A filled value skips the email. -->
+        <div class="honeypot" aria-hidden="true">
+          <label for="f-website">Leave this empty</label>
+          <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off">
         </div>
       </div>
       <div class="form-actions">
@@ -409,6 +727,8 @@
   that address instead. Only after someone clicks that link do later
   submissions arrive as emails. Change the address in
   FORMSUBMIT_ENDPOINT at the top of the script below.
+  While the address is still the YOUR_EMAIL@example.com placeholder,
+  no request is sent at all, so task data never leaves the browser.
   Note: FormSubmit may reject requests from pages opened as local files
   (file://). The board still works; you just see the warning toast.
   Serve the file over http(s) for real email delivery.
@@ -425,24 +745,36 @@ const ID_PREFIX = "ITPM";          // task IDs look like ITPM-0001
 const SUBJECT_PREFIX = "[IT PMO]"; // email subject prefix
 
 /* =========================================================
-   Reference data
+   Security settings
    ========================================================= */
-const PROJECTS = [
+const NOTIFY_TIMEOUT_MS = 10000;                      // abort a hung email request
+const NOTIFY_RATE = Object.freeze({ max: 5, windowMs: 60000 }); // emails per minute
+const ID_PATTERN = new RegExp(`^${ID_PREFIX}-\\d{4,}$`);
+// Only an https FormSubmit AJAX URL is accepted; the placeholder address counts as "not configured"
+const NOTIFY_ENABLED =
+  /^https:\/\/formsubmit\.co\/ajax\/[^/?#\s]+$/.test(FORMSUBMIT_ENDPOINT) &&
+  !FORMSUBMIT_ENDPOINT.includes("YOUR_EMAIL@example.com");
+
+/* =========================================================
+   Reference data (frozen so nothing can change it at runtime)
+   ========================================================= */
+const PROJECTS = Object.freeze([
   "Core Banking Upgrade", "Digital Channels", "Cybersecurity Uplift",
   "Data & Analytics", "Infrastructure & Cloud", "Vendor Management"
-];
-const CATEGORIES = [
+]);
+const CATEGORIES = Object.freeze([
   "Application Development", "Infrastructure", "Cybersecurity",
   "Data", "Compliance", "Vendor"
-];
-const PRIORITIES = ["Critical", "High", "Medium", "Low"];
-const STATUSES = [
+]);
+const PRIORITIES = Object.freeze(["Critical", "High", "Medium", "Low"]);
+const STATUSES = Object.freeze([
   { name: "Backlog",     meaning: "Logged, not yet scheduled" },
   { name: "In Progress", meaning: "Actively being worked" },
   { name: "Blocked",     meaning: "Waiting on a dependency, vendor or approval" },
   { name: "Done",        meaning: "Completed / closed" }
-];
-const STATUS_NAMES = STATUSES.map(s => s.name);
+].map(Object.freeze));
+const STATUS_NAMES = Object.freeze(STATUSES.map(s => s.name));
+const TABS = Object.freeze(["board", "timeline", "projects", "reports"]);
 
 /* =========================================================
    State: the single source of truth (in memory only)
@@ -450,7 +782,7 @@ const STATUS_NAMES = STATUSES.map(s => s.name);
 const state = {
   tasks: [],
   filters: { project: "", assignee: "", priority: "" },
-  ui: { confirmDeleteId: null, moveMenuId: null } // transient per-card UI state
+  ui: { tab: "board", confirmDeleteId: null, moveMenuId: null } // transient UI state
 };
 let nextId = 1;
 
@@ -463,7 +795,17 @@ function escapeHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/'/g, "&#39;")
+    .replace(/`/g, "&#96;");
+}
+
+// Strip control characters and invisible / bidi-override characters (spoofing, header injection).
+// Newlines and tabs survive only where allowNewlines is set (the description).
+function cleanText(value, allowNewlines) {
+  const text = String(value == null ? "" : value)
+    .replace(/[​-‏‪-‮⁠-⁤⁦-⁩﻿]/g, "")
+    .replace(allowNewlines ? /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g : /[\u0000-\u001F\u007F]/g, "");
+  return text.trim();
 }
 
 // Local-date ISO string (YYYY-MM-DD), so the date doesn't shift by a day across timezones
@@ -475,14 +817,29 @@ function toISODate(date) {
 }
 function todayISO() { return toISODate(new Date()); }
 function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return toISODate(d); }
+function parseISO(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); }
+function isValidISO(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  return toISODate(parseISO(iso)) === iso; // rejects 2026-02-31 and similar
+}
+function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+function shiftISO(iso, n) { const d = parseISO(iso); d.setDate(d.getDate() + n); return toISODate(d); }
 
 function isOverdue(task) {
   return task.status !== "Done" && task.dueDate < todayISO();
 }
 
-function formatDate(iso) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+function formatDate(iso, withYear = true) {
+  const opts = withYear ? { day: "numeric", month: "short", year: "numeric" } : { day: "numeric", month: "short" };
+  return parseISO(iso).toLocaleDateString(undefined, opts);
+}
+
+function relativeDays(iso) {
+  const n = daysBetween(todayISO(), iso);
+  if (n === 0) return "today";
+  if (n === 1) return "tomorrow";
+  if (n === -1) return "yesterday";
+  return n > 0 ? `in ${n} days` : `${-n} days ago`;
 }
 
 function generateId() {
@@ -493,21 +850,30 @@ function slug(text) { return text.toLowerCase().replace(/[^a-z0-9]+/g, "-"); }
 
 function findTask(id) { return state.tasks.find(t => t.id === id); }
 
+function pct(part, whole) { return whole ? Math.round((part / whole) * 100) : 0; }
+
 /* =========================================================
-   Seed data: 8 demo tasks across all four columns
+   Seed data: 15 demo tasks across all projects and columns
    ========================================================= */
 function seedTasks() {
   const seeds = [
-    { title: "Migrate FX pricing service to AWS", description: "Lift-and-shift FX pricing microservice to the AWS landing zone, including DR runbook.", project: "Infrastructure & Cloud", category: "Infrastructure", assignee: "Priya Raman", priority: "High", dueDate: addDays(21), status: "In Progress" },
-    { title: "Patch CVE-2025-XXXX on branch teller VDI", description: "Apply vendor hotfix to all teller VDI images and verify with a vulnerability rescan.", project: "Cybersecurity Uplift", category: "Cybersecurity", assignee: "Marcus Tan", priority: "Critical", dueDate: addDays(-2), status: "In Progress" },
-    { title: "UAT sign-off for mobile onboarding release 4.2", description: "Collect business sign-off on eKYC flow and the new account-opening screens.", project: "Digital Channels", category: "Application Development", assignee: "Siti Nurhaliza", priority: "High", dueDate: addDays(5), status: "Blocked" },
-    { title: "SWIFT CSP annual attestation evidence pack", description: "Compile control evidence for the annual SWIFT Customer Security Programme attestation.", project: "Cybersecurity Uplift", category: "Compliance", assignee: "Daniel Lim", priority: "Critical", dueDate: addDays(30), status: "Backlog" },
-    { title: "Renew core banking vendor support contract", description: "Negotiate the renewal and SLA changes with the core banking vendor before expiry.", project: "Vendor Management", category: "Vendor", assignee: "Grace Wong", priority: "Medium", dueDate: addDays(-6), status: "Blocked" },
-    { title: "Build daily liquidity dashboard in data lake", description: "Treasury liquidity KPIs sourced from the GL and payments feeds.", project: "Data & Analytics", category: "Data", assignee: "Arjun Mehta", priority: "Medium", dueDate: addDays(45), status: "Backlog" },
-    { title: "Decommission legacy batch scheduler servers", description: "Retire the old scheduler hosts after the cut-over to the new orchestration platform.", project: "Core Banking Upgrade", category: "Infrastructure", assignee: "Kevin Ong", priority: "Low", dueDate: addDays(60), status: "Backlog" },
-    { title: "Deploy SIEM rules for privileged access anomalies", description: "Detection use-cases for after-hours admin logins and privilege escalation.", project: "Cybersecurity Uplift", category: "Cybersecurity", assignee: "Marcus Tan", priority: "High", dueDate: addDays(-10), status: "Done" }
+    { title: "Core banking data migration dry run #2", description: "Second full dry run of customer and account migration with reconciliation reports.", project: "Core Banking Upgrade", category: "Data", assignee: "Kevin Ong", priority: "High", start: -20, due: 10, status: "In Progress" },
+    { title: "Regression test pack for GL interface", description: "Automated regression suite for the general ledger interface after the upgrade.", project: "Core Banking Upgrade", category: "Application Development", assignee: "Nur Aisyah", priority: "High", start: -25, due: -4, status: "Blocked" },
+    { title: "Decommission legacy batch scheduler servers", description: "Retire the old scheduler hosts after the cut-over to the new orchestration platform.", project: "Core Banking Upgrade", category: "Infrastructure", assignee: "Kevin Ong", priority: "Low", start: 30, due: 60, status: "Backlog" },
+    { title: "UAT sign-off for mobile onboarding release 4.2", description: "Collect business sign-off on eKYC flow and the new account-opening screens.", project: "Digital Channels", category: "Application Development", assignee: "Siti Nurhaliza", priority: "High", start: -15, due: 5, status: "Blocked" },
+    { title: "Accessibility audit of internet banking portal", description: "WCAG 2.2 AA audit of the retail internet banking journeys with a remediation backlog.", project: "Digital Channels", category: "Compliance", assignee: "Hannah Lee", priority: "Medium", start: -5, due: 18, status: "In Progress" },
+    { title: "Release 4.3 backlog grooming", description: "Size and prioritise the stories for the next mobile release.", project: "Digital Channels", category: "Application Development", assignee: "Siti Nurhaliza", priority: "Low", start: 7, due: 25, status: "Backlog" },
+    { title: "Patch CVE-2025-XXXX on branch teller VDI", description: "Apply vendor hotfix to all teller VDI images and verify with a vulnerability rescan.", project: "Cybersecurity Uplift", category: "Cybersecurity", assignee: "Marcus Tan", priority: "Critical", start: -12, due: -2, status: "In Progress" },
+    { title: "SWIFT CSP annual attestation evidence pack", description: "Compile control evidence for the annual SWIFT Customer Security Programme attestation.", project: "Cybersecurity Uplift", category: "Compliance", assignee: "Daniel Lim", priority: "Critical", start: 0, due: 30, status: "Backlog" },
+    { title: "Deploy SIEM rules for privileged access anomalies", description: "Detection use-cases for after-hours admin logins and privilege escalation.", project: "Cybersecurity Uplift", category: "Cybersecurity", assignee: "Marcus Tan", priority: "High", start: -40, due: -10, status: "Done" },
+    { title: "Data quality rules for customer master", description: "Completeness and validity checks on the customer master feed.", project: "Data & Analytics", category: "Data", assignee: "Arjun Mehta", priority: "Medium", start: -30, due: -5, status: "Done" },
+    { title: "Build daily liquidity dashboard in data lake", description: "Treasury liquidity KPIs sourced from the GL and payments feeds.", project: "Data & Analytics", category: "Data", assignee: "Arjun Mehta", priority: "Medium", start: 10, due: 45, status: "Backlog" },
+    { title: "Migrate FX pricing service to AWS", description: "Lift-and-shift FX pricing microservice to the AWS landing zone, including DR runbook.", project: "Infrastructure & Cloud", category: "Infrastructure", assignee: "Priya Raman", priority: "High", start: -10, due: 21, status: "In Progress" },
+    { title: "Landing zone guardrails review", description: "Review preventive and detective guardrails for the cloud landing zone.", project: "Infrastructure & Cloud", category: "Cybersecurity", assignee: "Priya Raman", priority: "Medium", start: -35, due: -8, status: "Done" },
+    { title: "Renew core banking vendor support contract", description: "Negotiate the renewal and SLA changes with the core banking vendor before expiry.", project: "Vendor Management", category: "Vendor", assignee: "Grace Wong", priority: "Medium", start: -30, due: -6, status: "Blocked" },
+    { title: "Quarterly vendor risk assessments", description: "Third-party risk questionnaires for the top 10 critical IT vendors.", project: "Vendor Management", category: "Compliance", assignee: "Grace Wong", priority: "Medium", start: 3, due: 35, status: "Backlog" }
   ];
-  state.tasks = seeds.map(s => ({ id: generateId(), ...s }));
+  state.tasks = seeds.map(({ start, due, ...s }) => ({ id: generateId(), ...s, startDate: addDays(start), dueDate: addDays(due) }));
 }
 
 /* =========================================================
@@ -529,7 +895,46 @@ function filtersActive() {
 }
 
 /* =========================================================
-   Rendering: everything on the board is re-rendered from state
+   Date scale shared by the timeline and project views
+   ========================================================= */
+function dateRange(tasks) {
+  const today = todayISO();
+  let min = today, max = today;
+  tasks.forEach(t => {
+    if (t.startDate < min) min = t.startDate;
+    if (t.dueDate > max) max = t.dueDate;
+  });
+  min = shiftISO(min, -3);
+  max = shiftISO(max, 3);
+  return { min, max, days: Math.max(1, daysBetween(min, max)) };
+}
+
+function scale(range, iso) { return (daysBetween(range.min, iso) / range.days) * 100; }
+
+// Bars are positioned through data attributes, then applyGeometry() sets them via CSSOM.
+// That keeps inline style attributes out of the markup, so the strict CSP still allows them.
+function geo(left, width) {
+  const l = Math.max(0, Math.min(100, left));
+  const w = width == null ? null : Math.max(0, Math.min(100 - l, width));
+  return w == null ? `data-left="${l.toFixed(3)}"` : `data-left="${l.toFixed(3)}" data-width="${w.toFixed(3)}"`;
+}
+
+function applyGeometry(root) {
+  root.querySelectorAll("[data-left], [data-width]").forEach(el => {
+    if (el.dataset.left != null) el.style.left = `${Number(el.dataset.left)}%`;
+    if (el.dataset.width != null) el.style.width = `${Number(el.dataset.width)}%`;
+  });
+}
+
+function taskBar(task, range, extraClass = "") {
+  const left = scale(range, task.startDate);
+  const width = scale(range, shiftISO(task.dueDate, 1)) - left;
+  const late = isOverdue(task) ? " is-late" : "";
+  return `<span class="bar s-${slug(task.status)}${late} ${extraClass}" ${geo(left, width)}></span>`;
+}
+
+/* =========================================================
+   Rendering: every view is re-rendered from state
    ========================================================= */
 function renderCard(task) {
   const id = escapeHtml(task.id);
@@ -537,6 +942,10 @@ function renderCard(task) {
   const overdue = isOverdue(task);
   const showMove = state.ui.moveMenuId === task.id;
   const showConfirm = state.ui.confirmDeleteId === task.id;
+
+  // Elapsed share of the task's start→due window, as a small progress line on the card
+  const total = Math.max(1, daysBetween(task.startDate, task.dueDate));
+  const elapsed = task.status === "Done" ? 100 : Math.max(0, Math.min(100, pct(daysBetween(task.startDate, todayISO()), total)));
 
   const moveMenu = showMove ? `
     <div class="move-menu" role="group" aria-label="Move ${id} to">
@@ -564,8 +973,9 @@ function renderCard(task) {
       <dl class="card-meta">
         <div><dt>Project:</dt> <dd>${escapeHtml(task.project)}</dd></div>
         <div><dt>Assignee:</dt> <dd>${escapeHtml(task.assignee)}</dd></div>
-        <div><dt>Due:</dt> <dd><time datetime="${escapeHtml(task.dueDate)}">${escapeHtml(formatDate(task.dueDate))}</time></dd></div>
+        <div><dt>Dates:</dt> <dd><time datetime="${escapeHtml(task.startDate)}">${escapeHtml(formatDate(task.startDate, false))}</time> &rarr; <time datetime="${escapeHtml(task.dueDate)}">${escapeHtml(formatDate(task.dueDate))}</time></dd></div>
       </dl>
+      <div class="card-span${overdue ? " is-late" : ""}" aria-hidden="true"><span ${geo(0, elapsed)}></span></div>
       <div class="badges">
         <span class="pill pill-${prio}"><span class="visually-hidden">Priority: </span>${escapeHtml(task.priority)}</span>
         <span class="tag"><span class="visually-hidden">Category: </span>${escapeHtml(task.category)}</span>
@@ -589,12 +999,8 @@ function renderSummary() {
     `<li class="overdue-stat">Overdue<strong>${overdue}</strong></li>`;
 }
 
-// focus: optional { id, action } or { column } to restore keyboard focus after re-render
-function renderBoard(focus) {
-  const visible = applyFilters(state.tasks);
-  const board = document.getElementById("board");
-
-  board.innerHTML = STATUSES.map(col => {
+function renderColumns(visible) {
+  document.getElementById("board").innerHTML = STATUSES.map(col => {
     const total = state.tasks.filter(t => t.status === col.name).length;
     const shown = visible.filter(t => t.status === col.name);
     const badge = filtersActive() ? `${shown.length}/${total}` : `${total}`;
@@ -603,7 +1009,7 @@ function renderBoard(focus) {
       <section class="column" data-status="${escapeHtml(col.name)}" aria-labelledby="col-${colSlug}">
         <div class="column-header">
           <div>
-            <h2 id="col-${colSlug}">${escapeHtml(col.name)}</h2>
+            <h3 id="col-${colSlug}" class="col-title">${escapeHtml(col.name)}</h3>
             <p>${escapeHtml(col.meaning)}</p>
           </div>
           <span class="count-badge" aria-label="${shown.length} tasks shown">${badge}</span>
@@ -613,8 +1019,202 @@ function renderBoard(focus) {
         </div>
       </section>`;
   }).join("");
+}
 
+function renderTimeline(visible) {
+  const el = document.getElementById("timeline");
+  if (!visible.length) { el.innerHTML = `<p class="empty">No tasks match the filters.</p>`; return; }
+
+  const range = dateRange(visible);
+  const today = todayISO();
+  const todayLine = `<span class="today-line" ${geo(scale(range, today))}></span>`;
+
+  // Weekly ticks, starting on the first Monday in range
+  const ticks = [];
+  let t = range.min;
+  while (parseISO(t).getDay() !== 1) t = shiftISO(t, 1);
+  for (; t <= range.max; t = shiftISO(t, 7)) {
+    ticks.push(`<span class="tick" ${geo(scale(range, t))}>${escapeHtml(formatDate(t, false))}</span>`);
+  }
+
+  const groups = PROJECTS.map(project => {
+    const tasks = visible.filter(x => x.project === project)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    if (!tasks.length) return "";
+    const start = tasks.reduce((m, x) => x.startDate < m ? x.startDate : m, tasks[0].startDate);
+    const end = tasks.reduce((m, x) => x.dueDate > m ? x.dueDate : m, tasks[0].dueDate);
+    const done = pct(tasks.filter(x => x.status === "Done").length, tasks.length);
+    const left = scale(range, start);
+    const width = scale(range, shiftISO(end, 1)) - left;
+    const gid = `tl-${slug(project)}`;
+
+    const rows = tasks.map(task => `
+      <li class="gantt-row">
+        <div class="gantt-label">
+          <span class="ttl"><span class="tid">${escapeHtml(task.id)}</span>${escapeHtml(task.title)}</span>
+          <span class="sub">${escapeHtml(task.assignee)} · ${escapeHtml(task.status)}${isOverdue(task) ? " · overdue" : ""}</span>
+          <span class="visually-hidden">Starts ${escapeHtml(formatDate(task.startDate))}, due ${escapeHtml(formatDate(task.dueDate))}.</span>
+        </div>
+        <div class="gantt-track" aria-hidden="true">${taskBar(task, range)}${todayLine}</div>
+      </li>`).join("");
+
+    return `
+      <section class="gantt-group" aria-labelledby="${gid}">
+        <div class="gantt-row">
+          <div class="gantt-label">
+            <h3 id="${gid}">${escapeHtml(project)}</h3>
+            <span class="sub">${escapeHtml(formatDate(start, false))} – ${escapeHtml(formatDate(end))} · ${done}% done</span>
+          </div>
+          <div class="gantt-track" aria-hidden="true"><span class="bar bar-project" ${geo(left, width)}><span ${geo(0, done)}></span></span>${todayLine}</div>
+        </div>
+        <ul>${rows}</ul>
+      </section>`;
+  }).join("");
+
+  el.innerHTML = `
+    <div class="gantt">
+      <div class="gantt-head" aria-hidden="true">
+        <span>Project / task</span>
+        <div class="gantt-axis">${ticks.join("")}<span class="tick tick-today" ${geo(scale(range, today))}>Today</span></div>
+      </div>
+      ${groups}
+    </div>`;
+}
+
+function projectHealth(tasks) {
+  if (!tasks.length) return ["empty", "No tasks"];
+  if (tasks.every(t => t.status === "Done")) return ["complete", "Complete"];
+  if (tasks.some(isOverdue)) return ["off-track", "Off track"];
+  if (tasks.some(t => t.status === "Blocked")) return ["at-risk", "At risk"];
+  return ["on-track", "On track"];
+}
+
+function renderProjects(visible) {
+  const el = document.getElementById("projects");
+  const projects = state.filters.project ? [state.filters.project] : PROJECTS;
+  const range = dateRange(visible);
+  const todayLine = `<span class="today-line" ${geo(scale(range, todayISO()))}></span>`;
+
+  el.innerHTML = projects.map(project => {
+    const tasks = visible.filter(t => t.project === project)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    const [healthKey, healthLabel] = projectHealth(tasks);
+    const done = tasks.filter(t => t.status === "Done").length;
+    const blocked = tasks.filter(t => t.status === "Blocked").length;
+    const overdue = tasks.filter(isOverdue).length;
+    const active = tasks.filter(t => t.status === "In Progress").length;
+    const progress = pct(done, tasks.length);
+    const next = tasks.filter(t => t.status !== "Done").sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+    const start = tasks.length ? tasks[0].startDate : null;
+    const end = tasks.length ? tasks.reduce((m, x) => x.dueDate > m ? x.dueDate : m, tasks[0].dueDate) : null;
+
+    const timeline = tasks.length ? `
+      <div class="mini-gantt" aria-hidden="true"><div class="mini-inner">
+        ${tasks.map(t => `<div class="mini-lane">${taskBar(t, range)}</div>`).join("")}
+        ${todayLine}
+      </div></div>
+      <div class="mini-dates" aria-hidden="true"><span>${escapeHtml(formatDate(range.min))}</span><span>${escapeHtml(formatDate(range.max))}</span></div>
+      <p class="visually-hidden">Timeline from ${escapeHtml(formatDate(start))} to ${escapeHtml(formatDate(end))}.</p>` :
+      `<p class="empty">No tasks match the filters.</p>`;
+
+    return `
+      <article class="project-card" aria-labelledby="pj-${slug(project)}">
+        <header>
+          <h3 id="pj-${slug(project)}">${escapeHtml(project)}</h3>
+          <span class="health health-${healthKey}">${healthLabel}</span>
+        </header>
+        <div class="progress-row">
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}" aria-label="${escapeHtml(project)} completion"><span ${geo(0, progress)}></span></div>
+          <span>${progress}% · ${done}/${tasks.length} done</span>
+        </div>
+        <dl class="project-stats">
+          <div><dt>Tasks</dt><dd>${tasks.length}</dd></div>
+          <div><dt>Active</dt><dd>${active}</dd></div>
+          <div${blocked ? ` class="is-alert"` : ""}><dt>Blocked</dt><dd>${blocked}</dd></div>
+          <div${overdue ? ` class="is-alert"` : ""}><dt>Overdue</dt><dd>${overdue}</dd></div>
+        </dl>
+        ${timeline}
+        <p class="next-due">${next
+          ? `Next due: <strong>${escapeHtml(next.id)}</strong> ${escapeHtml(next.title)} (${escapeHtml(relativeDays(next.dueDate))})`
+          : "Nothing open."}</p>
+        <button type="button" class="link-btn" data-action="view-timeline" data-project="${escapeHtml(project)}">View on timeline &#9656;</button>
+      </article>`;
+  }).join("");
+}
+
+function hbars(rows, max, colourClass) {
+  if (!rows.length) return `<p class="empty">No data.</p>`;
+  return `<ul class="hbars">${rows.map(([label, n]) => `
+    <li><span class="lbl">${escapeHtml(label)}</span>
+      <span class="hbar" aria-hidden="true"><span class="${colourClass ? colourClass(label) : ""}" ${geo(0, pct(n, max))}></span></span>
+      <span class="val">${n}</span></li>`).join("")}</ul>`;
+}
+
+function renderReports(visible) {
+  const el = document.getElementById("reports");
+  const total = visible.length;
+
+  const byStatus = STATUS_NAMES.map(s => [s, visible.filter(t => t.status === s).length]);
+  const stack = byStatus.filter(([, n]) => n).map(([s, n]) =>
+    `<span class="s-${slug(s)}" ${geo(0, pct(n, total))}></span>`).join("");
+  const statusLegend = byStatus.map(([s, n]) =>
+    `<li><span class="swatch s-${slug(s)}"></span>${escapeHtml(s)}: <strong>${n}</strong> (${pct(n, total)}%)</li>`).join("");
+
+  const byPriority = PRIORITIES.map(p => [p, visible.filter(t => t.priority === p).length]);
+  const open = visible.filter(t => t.status !== "Done");
+  const loads = {};
+  open.forEach(t => { loads[t.assignee] = (loads[t.assignee] || 0) + 1; });
+  const byAssignee = Object.entries(loads).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const maxLoad = byAssignee.length ? byAssignee[0][1] : 0;
+
+  const late = visible.filter(isOverdue).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const lateTable = late.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">ID</th><th scope="col">Task</th><th scope="col">Project</th><th scope="col">Assignee</th><th scope="col">Late by</th></tr></thead>
+      <tbody>${late.map(t => `<tr>
+        <td>${escapeHtml(t.id)}</td><td>${escapeHtml(t.title)}</td><td>${escapeHtml(t.project)}</td>
+        <td>${escapeHtml(t.assignee)}</td><td class="late">${daysBetween(t.dueDate, todayISO())} days</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="empty">No overdue tasks. </p>`;
+
+  el.innerHTML = `
+    <section class="report-card wide" aria-labelledby="rp-status">
+      <h3 id="rp-status">Status mix (${total} tasks)</h3>
+      <div class="stack" aria-hidden="true">${stack}</div>
+      <ul class="legend">${statusLegend}</ul>
+    </section>
+    <section class="report-card" aria-labelledby="rp-prio">
+      <h3 id="rp-prio">Tasks by priority</h3>
+      ${hbars(byPriority, Math.max(1, ...byPriority.map(r => r[1])), label => `p-${slug(label)}`)}
+    </section>
+    <section class="report-card" aria-labelledby="rp-load">
+      <h3 id="rp-load">Open tasks per assignee</h3>
+      ${hbars(byAssignee, maxLoad)}
+    </section>
+    <section class="report-card wide" aria-labelledby="rp-late">
+      <h3 id="rp-late">Overdue tasks (${late.length})</h3>
+      ${lateTable}
+    </section>`;
+}
+
+function renderTabs() {
+  document.querySelectorAll("#tablist [role=tab]").forEach(tab => {
+    const selected = tab.dataset.tab === state.ui.tab;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+  });
+}
+
+// focus: optional { id, action } or { column } to restore keyboard focus after re-render
+function render(focus) {
+  const visible = applyFilters(state.tasks);
+  renderTabs();
+  renderColumns(visible);
+  renderTimeline(visible);
+  renderProjects(visible);
+  renderReports(visible);
   renderSummary();
+  applyGeometry(document.getElementById("main"));
   document.getElementById("filter-count").textContent = filtersActive()
     ? `Showing ${visible.length} of ${state.tasks.length} tasks` : "";
 
@@ -638,7 +1238,7 @@ function restoreFocus(focus) {
 function addTask(data) {
   const task = { id: generateId(), ...data };
   state.tasks.push(task);
-  renderBoard();
+  render();
   return task;
 }
 
@@ -648,7 +1248,7 @@ function moveTask(id, status, focusAfter) {
   task.status = status;
   state.ui.moveMenuId = null;
   state.ui.confirmDeleteId = null;
-  renderBoard(focusAfter ? { id, action: "move-toggle" } : null);
+  render(focusAfter ? { id, action: "move-toggle" } : null);
   showToast(`${id} moved to ${status}`, "info");
 }
 
@@ -658,8 +1258,17 @@ function deleteTask(id) {
   state.tasks = state.tasks.filter(t => t.id !== id);
   state.ui.confirmDeleteId = null;
   if (state.ui.moveMenuId === id) state.ui.moveMenuId = null;
-  renderBoard({ column: task.status });
+  render({ column: task.status });
   showToast(`${id} deleted`, "info");
+}
+
+function setTab(tab, focusTab) {
+  if (!TABS.includes(tab)) tab = "board";
+  state.ui.tab = tab;
+  state.ui.moveMenuId = null;
+  state.ui.confirmDeleteId = null;
+  render();
+  if (focusTab) document.getElementById(`tab-${tab}`).focus();
 }
 
 /* =========================================================
@@ -685,31 +1294,56 @@ function showToast(message, type = "info", timeout = 4500) {
 /* =========================================================
    FormSubmit notification (email). This is the only network call.
    ========================================================= */
+const notifyLog = [];
+
+// Client-side rate limit, so a stuck key or a script can't flood the inbox
+function notifyAllowed() {
+  const now = Date.now();
+  while (notifyLog.length && now - notifyLog[0] > NOTIFY_RATE.windowMs) notifyLog.shift();
+  if (notifyLog.length >= NOTIFY_RATE.max) return false;
+  notifyLog.push(now);
+  return true;
+}
+
 async function notifyNewTask(task) {
-  const res = await fetch(FORMSUBMIT_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      _subject: `${SUBJECT_PREFIX} New task ${task.id}: ${task.title}`,
-      _template: "table",
-      _captcha: "false",
-      "Task ID": task.id,
-      Title: task.title,
-      Description: task.description,
-      Project: task.project,
-      Category: task.category,
-      Assignee: task.assignee,
-      Priority: task.priority,
-      "Due Date": task.dueDate,
-      Status: task.status,
-      "Submitted At": new Date().toISOString()
-    })
-  });
-  if (!res.ok) throw new Error(`FormSubmit failed: ${res.status}`);
-  const json = await res.json();
-  // FormSubmit can return HTTP 200 with { success: "false" } (e.g. file:// origin)
-  if (json && String(json.success) === "false") throw new Error(`FormSubmit rejected: ${json.message || "unknown"}`);
-  return json;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), NOTIFY_TIMEOUT_MS);
+  try {
+    const res = await fetch(FORMSUBMIT_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+      redirect: "error",
+      referrerPolicy: "strict-origin",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: `${SUBJECT_PREFIX} New task ${task.id}: ${task.title}`.slice(0, 150),
+        _template: "table",
+        _captcha: "false",
+        "Task ID": task.id,
+        Title: task.title,
+        Description: task.description,
+        Project: task.project,
+        Category: task.category,
+        Assignee: task.assignee,
+        Priority: task.priority,
+        "Start Date": task.startDate,
+        "Due Date": task.dueDate,
+        Status: task.status,
+        "Submitted At": new Date().toISOString()
+      })
+    });
+    if (!res.ok) throw new Error(`FormSubmit failed: ${res.status}`);
+    if (!(res.headers.get("Content-Type") || "").includes("application/json")) throw new Error("FormSubmit returned a non-JSON response");
+    const json = await res.json();
+    // FormSubmit can return HTTP 200 with { success: "false" } (e.g. file:// origin)
+    if (json && String(json.success) === "false") throw new Error(`FormSubmit rejected: ${json.message || "unknown"}`);
+    return json;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /* =========================================================
@@ -721,16 +1355,19 @@ function fillSelect(select, values, placeholder) {
   select.insertAdjacentHTML("beforeend", opts.join(""));
 }
 
+const FORM_FIELDS = ["title", "description", "project", "category", "assignee", "priority", "startDate", "dueDate", "status"];
+
 function readForm() {
   const form = document.getElementById("task-form");
   const v = name => form.elements[name].value;
   return {
-    title: v("title").trim(),
-    description: v("description").trim(),
+    title: cleanText(v("title")),
+    description: cleanText(v("description"), true),
     project: v("project"),
     category: v("category"),
-    assignee: v("assignee").trim(),
+    assignee: cleanText(v("assignee")).replace(/\s+/g, " "),
     priority: v("priority"),
+    startDate: v("startDate"),
     dueDate: v("dueDate"),
     status: v("status")
   };
@@ -738,36 +1375,43 @@ function readForm() {
 
 function validateForm(data) {
   const errors = {};
+  const today = todayISO();
   if (!data.title) errors.title = "Task title is required.";
   else if (data.title.length > 80) errors.title = "Keep the title to 80 characters or fewer.";
   if (data.description.length > 500) errors.description = "Keep the description to 500 characters or fewer.";
   if (!PROJECTS.includes(data.project)) errors.project = "Choose a project or workstream.";
   if (!CATEGORIES.includes(data.category)) errors.category = "Choose a category.";
   if (!data.assignee) errors.assignee = "Assignee is required.";
+  else if (data.assignee.length > 60) errors.assignee = "Keep the name to 60 characters or fewer.";
+  else if (!/^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u.test(data.assignee)) errors.assignee = "Use letters, spaces, apostrophes, hyphens or full stops only.";
   if (!PRIORITIES.includes(data.priority)) errors.priority = "Choose a priority.";
+  if (!data.startDate) errors.startDate = "Start date is required.";
+  else if (!isValidISO(data.startDate)) errors.startDate = "Enter a valid date.";
+  else if (data.startDate < shiftISO(today, -365)) errors.startDate = "Start date can't be more than a year ago.";
   if (!data.dueDate) errors.dueDate = "Due date is required.";
-  else if (!/^\d{4}-\d{2}-\d{2}$/.test(data.dueDate)) errors.dueDate = "Enter a valid date.";
-  else if (data.dueDate < todayISO()) errors.dueDate = "Due date can't be in the past.";
+  else if (!isValidISO(data.dueDate)) errors.dueDate = "Enter a valid date.";
+  else if (data.dueDate < today) errors.dueDate = "Due date can't be in the past.";
+  else if (data.dueDate > shiftISO(today, 365 * 5)) errors.dueDate = "Due date must be within five years.";
+  else if (!errors.startDate && data.dueDate < data.startDate) errors.dueDate = "Due date can't be before the start date.";
   if (!STATUS_NAMES.includes(data.status)) errors.status = "Choose a status.";
   return errors;
 }
 
 function showFieldErrors(errors) {
-  const fields = ["title", "description", "project", "category", "assignee", "priority", "dueDate", "status"];
-  fields.forEach(name => {
+  FORM_FIELDS.forEach(name => {
     const input = document.getElementById(`f-${name}`);
     const msg = errors[name] || "";
     document.getElementById(`err-${name}`).textContent = msg;
     input.closest(".field").classList.toggle("invalid", Boolean(msg));
     input.setAttribute("aria-invalid", msg ? "true" : "false");
   });
-  const first = fields.find(n => errors[n]);
+  const first = FORM_FIELDS.find(n => errors[n]);
   if (first) document.getElementById(`f-${first}`).focus();
 }
 
 function clearFieldError(input) {
-  const name = input.name;
-  document.getElementById(`err-${name}`).textContent = "";
+  if (!FORM_FIELDS.includes(input.name)) return;
+  document.getElementById(`err-${input.name}`).textContent = "";
   input.closest(".field").classList.remove("invalid");
   input.setAttribute("aria-invalid", "false");
 }
@@ -777,6 +1421,7 @@ function resetForm() {
   form.reset();
   form.elements.priority.value = "Medium";
   form.elements.status.value = "Backlog";
+  form.elements.startDate.value = todayISO();
   showFieldErrors({});
 }
 
@@ -791,6 +1436,8 @@ async function handleSubmit(event) {
   event.preventDefault();
   if (document.getElementById("submit-btn").disabled) return;
 
+  const form = document.getElementById("task-form");
+  const isBot = form.elements.website.value !== "";
   const data = readForm();
   const errors = validateForm(data);
   if (Object.keys(errors).length) { showFieldErrors(errors); return; }
@@ -800,6 +1447,12 @@ async function handleSubmit(event) {
   resetForm();
   closeModal();
   showToast(`${task.id} added to ${task.status}`, "success");
+
+  if (!NOTIFY_ENABLED || isBot) return; // nothing leaves the browser
+  if (!notifyAllowed()) {
+    showToast("Card added. Email skipped: too many notifications this minute.", "warning", 6500);
+    return;
+  }
 
   // Email notification in parallel; a failure must never break the board
   setSending(true);
@@ -821,6 +1474,8 @@ let lastFocus = null;
 function openModal() {
   lastFocus = document.activeElement;
   document.getElementById("f-dueDate").min = todayISO();
+  document.getElementById("f-startDate").min = shiftISO(todayISO(), -365);
+  if (!document.getElementById("f-startDate").value) document.getElementById("f-startDate").value = todayISO();
   document.getElementById("modal").hidden = false;
   document.getElementById("f-title").focus();
 }
@@ -832,7 +1487,7 @@ function closeModal() {
 
 function trapFocus(event) {
   if (event.key !== "Tab") return;
-  const focusables = document.querySelectorAll("#modal input, #modal select, #modal textarea, #modal button:not(:disabled)");
+  const focusables = document.querySelectorAll("#modal input:not([tabindex='-1']), #modal select, #modal textarea, #modal button:not(:disabled)");
   const first = focusables[0];
   const last = focusables[focusables.length - 1];
   if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
@@ -852,11 +1507,11 @@ function handleBoardClick(event) {
       state.ui.moveMenuId = state.ui.moveMenuId === id ? null : id;
       state.ui.confirmDeleteId = null;
       if (state.ui.moveMenuId) {
-        renderBoard();
+        render();
         const firstOpt = document.querySelector(`[data-id="${CSS.escape(id)}"][data-action="move-to"]`);
         if (firstOpt) firstOpt.focus();
       } else {
-        renderBoard({ id, action: "move-toggle" });
+        render({ id, action: "move-toggle" });
       }
       break;
     case "move-to":
@@ -864,21 +1519,41 @@ function handleBoardClick(event) {
       break;
     case "move-cancel":
       state.ui.moveMenuId = null;
-      renderBoard({ id, action: "move-toggle" });
+      render({ id, action: "move-toggle" });
       break;
     case "delete-ask":
       state.ui.confirmDeleteId = id;
       state.ui.moveMenuId = null;
-      renderBoard({ id, action: "delete-no" });
+      render({ id, action: "delete-no" });
       break;
     case "delete-no":
       state.ui.confirmDeleteId = null;
-      renderBoard({ id, action: "delete-ask" });
+      render({ id, action: "delete-ask" });
       break;
     case "delete-yes":
       deleteTask(id);
       break;
   }
+}
+
+function handleProjectsClick(event) {
+  const btn = event.target.closest("button[data-action='view-timeline']");
+  if (!btn || !PROJECTS.includes(btn.dataset.project)) return;
+  state.filters.project = btn.dataset.project;
+  document.getElementById("filter-project").value = btn.dataset.project;
+  location.hash = "timeline";
+}
+
+// Roving tabindex: arrow keys move between tabs (WAI-ARIA tabs pattern)
+function handleTabKeys(event) {
+  const keys = { ArrowRight: 1, ArrowLeft: -1, Home: "first", End: "last" };
+  if (!(event.key in keys)) return;
+  event.preventDefault();
+  const i = TABS.indexOf(state.ui.tab);
+  const step = keys[event.key];
+  const next = step === "first" ? 0 : step === "last" ? TABS.length - 1 : (i + step + TABS.length) % TABS.length;
+  location.hash = TABS[next];
+  setTab(TABS[next], true);
 }
 
 function handleKeydown(event) {
@@ -893,7 +1568,7 @@ function handleKeydown(event) {
     const action = state.ui.moveMenuId ? "move-toggle" : "delete-ask";
     state.ui.moveMenuId = null;
     state.ui.confirmDeleteId = null;
-    renderBoard({ id, action });
+    render({ id, action });
   }
 }
 
@@ -940,8 +1615,9 @@ function wireDragAndDrop(board) {
     if (!column) return;
     event.preventDefault();
     clearDropTargets();
+    // Ignore text dragged in from elsewhere: only accept our own task IDs
     const id = event.dataTransfer.getData("text/plain");
-    if (id) moveTask(id, column.dataset.status);
+    if (ID_PATTERN.test(id)) moveTask(id, column.dataset.status);
   });
 }
 
@@ -953,21 +1629,32 @@ function wireFilters() {
   const assignee = document.getElementById("filter-assignee");
   const priority = document.getElementById("filter-priority");
 
-  project.addEventListener("change", () => { state.filters.project = project.value; renderBoard(); });
-  priority.addEventListener("change", () => { state.filters.priority = priority.value; renderBoard(); });
-  assignee.addEventListener("input", () => { state.filters.assignee = assignee.value; renderBoard(); });
+  project.addEventListener("change", () => { state.filters.project = PROJECTS.includes(project.value) ? project.value : ""; render(); });
+  priority.addEventListener("change", () => { state.filters.priority = PRIORITIES.includes(priority.value) ? priority.value : ""; render(); });
+  assignee.addEventListener("input", () => { state.filters.assignee = assignee.value.slice(0, 60); render(); });
 
   document.getElementById("clear-filters").addEventListener("click", () => {
     state.filters = { project: "", assignee: "", priority: "" };
     project.value = ""; assignee.value = ""; priority.value = "";
-    renderBoard();
+    render();
   });
 }
 
 /* =========================================================
    Init
    ========================================================= */
+function tabFromHash() {
+  const tab = location.hash.replace(/^#/, "");
+  return TABS.includes(tab) ? tab : "board";
+}
+
 function init() {
+  // Clickjacking defence: refuse to run inside a frame (a meta CSP can't set frame-ancestors)
+  if (window.top !== window.self) {
+    document.body.innerHTML = `<p class="framed-warning">This page can't be shown inside a frame. Open it directly.</p>`;
+    return;
+  }
+
   fillSelect(document.getElementById("filter-project"), PROJECTS);
   fillSelect(document.getElementById("filter-priority"), PRIORITIES);
   fillSelect(document.getElementById("f-project"), PROJECTS, "Select a project…");
@@ -980,6 +1667,15 @@ function init() {
   board.addEventListener("click", handleBoardClick);
   wireDragAndDrop(board);
   wireFilters();
+  document.getElementById("projects").addEventListener("click", handleProjectsClick);
+
+  const tablist = document.getElementById("tablist");
+  tablist.addEventListener("click", event => {
+    const tab = event.target.closest("[role=tab]");
+    if (tab) location.hash = tab.dataset.tab;
+  });
+  tablist.addEventListener("keydown", handleTabKeys);
+  window.addEventListener("hashchange", () => setTab(tabFromHash()));
 
   const form = document.getElementById("task-form");
   form.addEventListener("submit", handleSubmit);
@@ -994,7 +1690,8 @@ function init() {
   document.addEventListener("keydown", handleKeydown);
 
   seedTasks();
-  renderBoard();
+  state.ui.tab = tabFromHash();
+  render();
 }
 
 init();
