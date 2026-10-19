@@ -8,7 +8,7 @@
   After editing either block, run `node tools/csp.mjs --write`
   to refresh the hashes (CI runs `--check` and fails if they are stale).
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-uAtPOvJDxTM15W0YzRdZC3Qwx6jaFMTLtU+qSFkcTT8='; style-src 'sha256-RJ08d9JUu7+XeI0u8IH7iC8lARTDoT95xo4OiH0HEAQ='; img-src data:; connect-src https://formsubmit.co; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-MocxxuNOH8q5rnA9ZmBhgmyve2ieiDrbOKKBHe5SFTE='; style-src 'sha256-RJ08d9JUu7+XeI0u8IH7iC8lARTDoT95xo4OiH0HEAQ='; img-src data:; connect-src https://formsubmit.co; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'none'">
 <meta name="referrer" content="strict-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1f2a17">
@@ -912,7 +912,7 @@ function dateRange(tasks) {
 function scale(range, iso) { return (daysBetween(range.min, iso) / range.days) * 100; }
 
 // Bars are positioned through data attributes, then applyGeometry() sets them via CSSOM.
-// That keeps inline style attributes out of the markup, so the strict CSP still allows them.
+// That keeps inline style attributes out of the markup, so the strict CSP needs no exception for them.
 function geo(left, width) {
   const l = Math.max(0, Math.min(100, left));
   const w = width == null ? null : Math.max(0, Math.min(100 - l, width));
